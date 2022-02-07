@@ -1,0 +1,14 @@
+{
+  BasedOnStyle: LLVM,
+  IndentWidth: 4,
+  TabWidth: 4,
+  UseTab: Never,
+  IndentCaseLabels: false,
+  ColumnLimit: 80,
+  MaxEmptyLinesToKeep: 1,
+  NamespaceIndentation: None,
+  AllowShortFunctionsOnASingleLine: true,
+  AllowShortIfStatementsOnASingleLine: true,
+  AlwaysBreakTemplateDeclarations: Yes,
+  Cpp11BracedListStyle: true,
+}
