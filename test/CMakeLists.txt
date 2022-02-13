@@ -10,7 +10,11 @@ find_package(redis++ REQUIRED)
 find_package(fmt REQUIRED)
 find_package(GTest REQUIRED)
 
-add_executable(${PROJECT_NAME} main.cpp)
+file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES false *.h *.cpp)
+
+set(SRCS ${TEST_SOURCES})
+
+add_executable(${PROJECT_NAME} ${SRCS})
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -26,5 +30,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${fmt_LIBRARIES} 
     ${GTest_LIBRARIES})  
 
-add_test(NAME redis_time_series_test
-    COMMAND redis_time_series_test)
+add_test(NAME ${PROJECT_NAME}
+    COMMAND ${PROJECT_NAME})

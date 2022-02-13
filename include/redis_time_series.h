@@ -93,8 +93,23 @@ inline std::string to_string(TsAggregation aggrgation) {
     }
 }
 
-enum class TsDuplicatePolicy { BLOCK, FIRST, LAST, MIN, MAX, SUM };
+inline TsAggregation to_aggregation(const std::string &aggregation) {
+    if (aggregation == "AVG") return TsAggregation::AVG;
+    if (aggregation == "SUM") return TsAggregation::SUM;
+    if (aggregation == "MIN") return TsAggregation::MIN;
+    if (aggregation == "MAX") return TsAggregation::MAX;
+    if (aggregation == "RANGE") return TsAggregation::RANGE;
+    if (aggregation == "COUNT") return TsAggregation::COUNT;
+    if (aggregation == "FIRST") return TsAggregation::FIRST;
+    if (aggregation == "LAST") return TsAggregation::LAST;
+    if (aggregation == "STD.P") return TsAggregation::STDP;
+    if (aggregation == "STD.S") return TsAggregation::STDS;
+    if (aggregation == "VAR.P") return TsAggregation::VARP;
+    if (aggregation == "VAR.S") return TsAggregation::VARS;
+    throw std::out_of_range("Invalid aggregation type '{aggregation}'");
+}
 
+enum class TsDuplicatePolicy { BLOCK, FIRST, LAST, MIN, MAX, SUM };
 inline std::string to_string(TsDuplicatePolicy policy) {
     switch (policy) {
     case TsDuplicatePolicy::BLOCK:
@@ -113,8 +128,18 @@ inline std::string to_string(TsDuplicatePolicy policy) {
         throw std::out_of_range("Invalid policy type.");
     }
 }
-enum class TsReduce { SUM, MIN, MAX };
 
+inline TsDuplicatePolicy to_duplicatPolicy(const std::string &policy) {
+    if (policy == "BLOCK") return TsDuplicatePolicy::BLOCK;
+    if (policy == "FIRST") return TsDuplicatePolicy::FIRST;
+    if (policy == "LAST") return TsDuplicatePolicy::LAST;
+    if (policy == "MIN") return TsDuplicatePolicy::MIN;
+    if (policy == "MAX") return TsDuplicatePolicy::MAX;
+    if (policy == "SUM") return TsDuplicatePolicy::SUM;
+    throw std::out_of_range("Invalid policy type '{policy}'");
+}
+
+enum class TsReduce { SUM, MIN, MAX };
 inline std::string to_string(TsReduce reduce) {
     switch (reduce) {
     case TsReduce::SUM:
@@ -154,6 +179,16 @@ class TimeStamp {
 
     TimeStamp() = default;
     ~TimeStamp() = default;
+    TimeStamp(const TimeStamp &timestamp) : value_{timestamp.value_} {}
+    TimeStamp(TimeStamp &&timestamp) : value_{timestamp.value_} {}
+    TimeStamp &operator=(const TimeStamp &timestamp) {
+        value_ = timestamp.value_;
+        return *this;
+    }
+    TimeStamp &operator=(TimeStamp &&timestamp) {
+        value_ = timestamp.value_;
+        return *this;
+    }
 
     std::string to_string() const {
         return "";
@@ -582,19 +617,14 @@ inline std::vector<TimeSeriesTuple> parseTimeSeriesTupleArray(
     return list;
 }
 
-// private
-// static std::vector<TimeSeriesLabel> ParseLabelArray(RedisResult result) {
-//     RedisResult[] redisResults = (RedisResult[])result;
-//     var list = new List<TimeSeriesLabel>(redisResults.Length);
-//     if (redisResults.Length == 0) return list;
-//     Array.ForEach(
-//         redisResults, labelResult = > {
-//             RedisResult[] labelTuple = (RedisResult[])labelResult;
-//             list.Add(new TimeSeriesLabel((string)labelTuple[0],
-//                                          (string)labelTuple[1]));
-//         });
-//     return list;
-// }
+inline std::vector<TimeSeriesLabel> parseLabelArray(
+    const std::vector<std::tuple<std::string, std::string>> &result) {
+    std::vector<TimeSeriesLabel> list;
+    for (auto &res : result) {
+        list.push_back(TimeSeriesLabel(std::get<0>(res), std::get<1>(res)));
+    }
+    return list;
+}
 
 // private
 // static std::vector<(string key, std::vector<TimeSeriesLabel> labels,
@@ -639,96 +669,94 @@ inline std::vector<TimeSeriesTuple> parseTimeSeriesTupleArray(
 //     return list;
 // }
 
-// private
-// static TimeSeriesRule ParseRule(RedisResult result) {
-//     RedisResult[] redisResults = (RedisResult[])result;
-//    const std::string&destKey = (string)redisResults[0];
-//     long bucketTime = (long)redisResults[1];
-//     var aggregation =
-//         AggregationExtensions.AsAggregation((string)redisResults[2]);
-//     return new TimeSeriesRule(destKey, bucketTime, aggregation);
-// }
+inline TimeSeriesRule
+parseRule(const std::tuple<std::string, std::string, sw::redis::OptionalString>
+              &result) {
+    auto destKey = std::get<0>(result);
+    uint64_t bucketTime = std::atoll(std::get<1>(result).c_str());
+    auto agg = std::get<2>(result);
+    std::optional<command_operator::TsAggregation> aggregation = std::nullopt;
+    if (agg.has_value())
+        aggregation = command_operator::to_aggregation(agg.value());
+    return TimeSeriesRule{destKey, bucketTime, aggregation};
+}
 
-// private
-// static std::vector<TimeSeriesRule> ParseRuleArray(RedisResult result) {
-//     RedisResult[] redisResults = (RedisResult[])result;
-//     var list = new List<TimeSeriesRule>();
-//     if (redisResults.Length == 0) return list;
-//     Array.ForEach(redisResults, rule = > list.Add(ParseRule(rule)));
-//     return list;
-// }
+inline std::vector<TimeSeriesRule> parseRuleArray(
+    const std::vector<std::tuple<std::string, std::string,
+                                 sw::redis::OptionalString>> &result) {
+    std::vector<TimeSeriesRule> list;
+    for (auto &res : result) {
+        list.push_back(parseRule(res));
+    }
+    return list;
+}
 
-// private
-// static TsDuplicatePolicy ? ParsePolicy(RedisResult result) {
-//     var policyStatus = (string)result;
-//     if (String.IsNullOrEmpty(policyStatus) || policyStatus == "(nil)") {
-//         return null;
-//     }
+inline std::optional<command_operator::TsDuplicatePolicy>
+parsePolicy(const sw::redis::OptionalString &result) {
+    if (result.has_value())
+        return command_operator::to_duplicatPolicy(result.value());
+    return std::nullopt;
+}
 
-//     return DuplicatePolicyExtensions.AsPolicy(policyStatus.ToUpper());
-// }
+inline TimeSeriesInformation parseInfo(redisReply *reply) {
+    if (!sw::redis::reply::is_array(*reply)) {
+        throw sw::redis::ProtoError("Expect ARRAY reply");
+    }
 
-// private
-// static TimeSeriesInformation ParseInfo(RedisResult result) {
-//     long totalSamples = -1, memoryUsage = -1, retentionTime = -1,
-//          chunkSize = -1, chunkCount = -1;
-//     TimeStamp firstTimestamp = null, lastTimestamp = null;
-//     std::vector<TimeSeriesLabel> labels = null;
-//     std::vector<TimeSeriesRule> rules = null;
-//    const std::string&sourceKey = null;
-//     TsDuplicatePolicy ? duplicatePolicy = null;
-//     RedisResult[] redisResults = (RedisResult[])result;
-//     for (int i = 0; i < redisResults.Length; ++i) {
-//        const std::string&label = (string)redisResults[i++];
-//         switch (label) {
-//         case "totalSamples":
-//             totalSamples = (long)redisResults[i];
-//             break;
-//         case "memoryUsage":
-//             memoryUsage = (long)redisResults[i];
-//             break;
-//         case "retentionTime":
-//             retentionTime = (long)redisResults[i];
-//             break;
-//         case "chunkCount":
-//             chunkCount = (long)redisResults[i];
-//             break;
-//         case "chunkSize":
-//             chunkSize = (long)redisResults[i];
-//             break;
-//         case "maxSamplesPerChunk":
-//             // If the property name is maxSamplesPerChunk then this is an old
-//             // version of RedisTimeSeries and we used the number of samples
-//             // before ( now Bytes )
-//             chunkSize = chunkSize * 16;
-//             break;
-//         case "firstTimestamp":
-//             firstTimestamp = ParseTimeStamp(redisResults[i]);
-//             break;
-//         case "lastTimestamp":
-//             lastTimestamp = ParseTimeStamp(redisResults[i]);
-//             break;
-//         case "labels":
-//             labels = ParseLabelArray(redisResults[i]);
-//             break;
-//         case "sourceKey":
-//             sourceKey = (string)redisResults[i];
-//             break;
-//         case "rules":
-//             rules = ParseRuleArray(redisResults[i]);
-//             break;
-//         case "duplicatePolicy":
-//             // Avalible for > v1.4
-//             duplicatePolicy = ParsePolicy(redisResults[i]);
-//             break;
-//         }
-//     }
+    uint64_t totalSamples = 0, memoryUsage = 0, retentionTime = 0,
+             chunkSize = 0, chunkCount = 0;
+    TimeStamp firstTimestamp, lastTimestamp;
+    std::vector<TimeSeriesLabel> labels;
+    std::vector<TimeSeriesRule> rules;
+    std::string sourceKey;
+    std::optional<command_operator::TsDuplicatePolicy> duplicatePolicy;
 
-//     return new TimeSeriesInformation(
-//         totalSamples, memoryUsage, firstTimestamp, lastTimestamp,
-//         retentionTime, chunkCount, chunkSize, labels, sourceKey, rules,
-//         duplicatePolicy);
-// }
+    for (size_t i = 0; i < reply->elements; ++i) {
+        auto key = sw::redis::reply::parse<std::string>(*reply->element[i++]);
+        if (key == "totalSamples") {
+            totalSamples =
+                sw::redis::reply::parse<long long>(*reply->element[i]);
+        } else if (key == "memoryUsage") {
+            memoryUsage =
+                sw::redis::reply::parse<long long>(*reply->element[i]);
+        } else if (key == "retentionTime") {
+            retentionTime =
+                sw::redis::reply::parse<long long>(*reply->element[i]);
+        } else if (key == "chunkCount") {
+            chunkCount = sw::redis::reply::parse<long long>(*reply->element[i]);
+        } else if (key == "chunkSize") {
+            chunkSize = sw::redis::reply::parse<long long>(*reply->element[i]);
+        } else if (key == "firstTimestamp") {
+            firstTimestamp = parseTimeStamp(
+                sw::redis::reply::parse<long long>(*reply->element[i]));
+        } else if (key == "lastTimestamp") {
+            lastTimestamp = parseTimeStamp(
+                sw::redis::reply::parse<long long>(*reply->element[i]));
+        } else if (key == "labels") {
+            labels = parseLabelArray(
+                sw::redis::reply::parse<
+                    std::vector<std::tuple<std::string, std::string>>>(
+                    *reply->element[i]));
+        } else if (key == "sourceKey") {
+            auto src = sw::redis::reply::parse<sw::redis::OptionalString>(
+                *reply->element[i]);
+            if (src.has_value()) sourceKey = src.value();
+        } else if (key == "rules") {
+            rules = parseRuleArray(
+                sw::redis::reply::parse<std::vector<std::tuple<
+                    std::string, std::string, sw::redis::OptionalString>>>(
+                    *reply->element[i]));
+        } else if (key == "duplicatePolicy") {
+            duplicatePolicy =
+                parsePolicy(sw::redis::reply::parse<sw::redis::OptionalString>(
+                    *reply->element[i]));
+        }
+    }
+    return TimeSeriesInformation{totalSamples,  memoryUsage,    firstTimestamp,
+                                 lastTimestamp, retentionTime,  chunkCount,
+                                 chunkSize,     labels,         sourceKey,
+                                 rules,         duplicatePolicy};
+}
 
 // private
 // static std::vector<std::string> ParseStringArray(RedisResult result) {
@@ -956,10 +984,12 @@ inline TimeSeriesTuple TimeSeriesGet(sw::redis::Redis *db,
 //     return ParseMRangeResponse(db.Execute(TS.MREVRANGE, args));
 // }
 
-// inline TimeSeriesInformation TimeSeriesInfo(sw::redis::Redis *db,
-//                                             const std::string &key) {
-//     return ParseInfo(db.Execute(TS.INFO, key));
-// }
+TimeSeriesInformation timeSeriesInfo(sw::redis::Redis *db,
+                                     const std::string &key) {
+    std::vector<std::string> args{"TS.INFO", key};
+    auto reply = db->command(args.begin(), args.end());
+    return parser::parseInfo(reply.get());
+}
 
 // inline std::vector<std::string>
 // TimeSeriesQueryIndex(sw::redis::Redis *db,
