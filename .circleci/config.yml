@@ -6,7 +6,7 @@ executors:
 
 jobs:
   build:
-    executer: exectr
+    executor: exectr
     steps:
       - checkout
       - run: 
