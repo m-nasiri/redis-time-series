@@ -157,10 +157,20 @@ inline std::string to_string(TsReduce reduce) {
 class TimeStamp {
   public:
     const std::array<std::string_view, 3> constants{"-", "+", "*"};
+    
     TimeStamp(uint64_t timestamp) : value_{timestamp} {}
+    TimeStamp(const std::string& timestamp) {
+        auto res = std::find_if(
+            constants.begin(), constants.end(),
+            [&timestamp](const auto &str) { return str == timestamp; });
+        if (res == constants.end()) throw std::invalid_argument("Timestamp parameter is wrong");
+
+        constantTime_ = timestamp;
+        isConstant_ = true;
+    }
 
     TimeStamp(const std::chrono::system_clock::time_point &dateTime) {
-        value_ = static_cast<decltype(value_)>(
+        value_ = static_cast<uint64_t>(
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 dateTime.time_since_epoch())
                 .count());
@@ -171,7 +181,7 @@ class TimeStamp {
         std::stringstream ss(timestamp);
         ss >> std::get_time(&tm, format.data());
         auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-        value_ = static_cast<decltype(value_)>(
+        value_ = static_cast<uint64_t>(
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 tp.time_since_epoch())
                 .count());
@@ -183,17 +193,24 @@ class TimeStamp {
     TimeStamp(TimeStamp &&timestamp) : value_{timestamp.value_} {}
     TimeStamp &operator=(const TimeStamp &timestamp) {
         value_ = timestamp.value_;
+        isConstant_ = timestamp.isConstant_;
+        constantTime_ = timestamp.constantTime_;
         return *this;
     }
     TimeStamp &operator=(TimeStamp &&timestamp) {
         value_ = timestamp.value_;
+        isConstant_ = timestamp.isConstant_;
+        constantTime_ = timestamp.constantTime_;
         return *this;
     }
 
+    bool hasValue() const { return value_ > 0 || !constantTime_.empty(); }
+    //TODO:
+    uint64_t value() const { return value_; } 
+
     std::string to_string() const {
-        return "";
-        // return fmt::format("{}", std::chrono::system_clock::time_point(
-        //                              std::chrono::milliseconds{value_}));
+        if (isConstant_) return constantTime_;
+        return fmt::format("{}", value_);
     }
 
     friend bool operator==(const TimeStamp &lhs, const TimeStamp &rhs) {
@@ -204,9 +221,9 @@ class TimeStamp {
         return lhs.value_ < rhs.value_;
     }
 
-    bool hasValue() const { return value_ > 0; }
-
   private:
+    bool isConstant_{false};
+    std::string constantTime_{};
     uint64_t value_{};
 };
 
@@ -248,6 +265,11 @@ class TimeSeriesLabel {
         : key_{key}, value_{value} {}
     std::string key() const { return key_; }
     std::string value() const { return value_; }
+
+    friend bool operator==(const TimeSeriesLabel &lhs,
+                           const TimeSeriesLabel &rhs) {
+        return (lhs.value_ == rhs.value_ && lhs.key_ == rhs.key_);
+    }
 
   private:
     std::string key_;

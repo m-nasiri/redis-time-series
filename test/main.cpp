@@ -1,5 +1,6 @@
+#include "redis_time_series_add_test.h"
+#include "redis_time_series_create_test.h"
 #include "gtest/gtest.h"
-#include "redis_time_series_test.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
