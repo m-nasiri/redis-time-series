@@ -12,8 +12,8 @@ jobs:
       - run: 
           name: "install building tools" 
           command: | 
-            apt-get -qq install -y cmake 
-            apt-get -qq install python3-pip && pip3 install --upgrade pip  
+            sudo apt-get -qq install -y cmake 
+            sudo apt-get -qq install python3-pip && pip3 install --upgrade pip  
             pip install conan && conan config set general.revisions_enabled=1
             conan profile new --detect --force default 
             conan profile update settings.compiler.libcxx=libstdc++11 default 
