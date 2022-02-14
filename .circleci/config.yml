@@ -2,23 +2,21 @@ version: 2.1
 executors:
   exectr:
     docker:
-      - image: gcc:11.2
+      - image: conanio/gcc11
 
 jobs:
   build:
     executor: exectr
     steps:
       - checkout
-      - run: 
-          name: "install building tools" 
-          command: | 
-            sudo apt-get -qq install -y cmake 
-            sudo apt-get -qq install python3-pip && pip3 install --upgrade pip  
-            pip install conan && conan config set general.revisions_enabled=1
+      - run:
+          name: "install building tools"
+          command: |
+            sudo pip install --upgrade conan 
+            conan config set general.revisions_enabled=1
             conan profile new --detect --force default 
-            conan profile update settings.compiler.libcxx=libstdc++11 default 
-            conan profile update settings.compiler.version=10 default
-      - run: 
+            conan profile update settings.compiler.libcxx=libstdc++11 default
+      - run:
           name: "build the code"
           command: |
             mkdir -p build && cd build
@@ -28,21 +26,22 @@ jobs:
 
       - persist_to_workspace:
           root: .
-          paths: build
+          paths: 
+            - build
 
   test:
     executor: exectr
     steps:
       - attach_workspace:
           at: .
-      - run: 
+      - run:
           name: "run the test"
-          command: | 
+          command: |
             cd build/test
             ./redis_time_series_test
       - store_test_results:
           path: build
-    
+
 workflows:
   build_and_test:
     jobs:
