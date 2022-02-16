@@ -6,6 +6,11 @@ jobs:
       - image: conanio/gcc11
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
       - run:
           name: "install building tools"
           command: |
@@ -21,11 +26,6 @@ jobs:
             conan install ..
             cmake ..
             make -j 10
-      - restore_cache:
-          keys:
-            - source-v1-{{ .Branch }}-{{ .Revision }}
-            - source-v1-{{ .Branch }}-
-            - source-v1-
       - save_cache:
           key: source-v1-{{ .Branch }}-{{ .Revision }}
           paths:
@@ -45,6 +45,10 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          keys:
+            - v1-make-redis-{{checksum "redis-stable.tar.gz"}}
+            - v1-make-redis-
       - run:
           name: run redis
           command: |
@@ -58,18 +62,14 @@ jobs:
             redis-server "redis/redis.conf" > /tmp/redis.log 2>&1 &
             sleep 10
             cat /tmp/redis.log
-      - run:
-          name: "run the test"
-          command: |
-            ./build/test/redis_time_series_test
-      - restore_cache:
-          keys:
-            - v1-make-redis-{{checksum "redis-stable.tar.gz"}}
-            - v1-make-redis-
       - save_cache:
           key: v1-make-redis-{{checksum "redis-stable.tar.gz"}}
           paths:
             - redis-stable
+      - run:
+          name: "run the test"
+          command: |
+            ./build/test/redis_time_series_test
       - store_test_results:
           path: build/test
 
