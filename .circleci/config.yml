@@ -46,9 +46,12 @@ jobs:
           name: Start all services declared in docker-compose.yml
           command: docker-compose up -d 
       - run:
-          name: "run the test"
           command: |
             echo $(ls)
+            ls
+      - run:
+          name: "run the test"
+          command: |
             sleep 10
             ./test/redis_time_series_test
       - store_test_results:
