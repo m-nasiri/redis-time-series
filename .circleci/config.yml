@@ -24,11 +24,13 @@ jobs:
       - persist_to_workspace:
           root: .
           paths: 
-           - build
+           - build/test/redis_time_series_test
+           - redis
+           - docker-compose.yml
 
   test:
     docker:
-      - image: conanio/gcc11
+      # - image: conanio/gcc11
       - image: cimg/base:2021.04
     steps:
       - attach_workspace:
@@ -50,7 +52,6 @@ jobs:
       - run:
           name: "run the test"
           command: |
-            cd build/test
             ./redis_time_series_test
       - store_test_results:
           path: build

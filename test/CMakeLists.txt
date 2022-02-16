@@ -24,7 +24,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${fmt_INCLUDE_DIRS} 
     ${GTest_INCLUDE_DIRS} )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE 
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    -static-libgcc -static-libstdc++
     ${hiredis_LIBRARIES}
     ${redis++_LIBRARIES} 
     ${fmt_LIBRARIES} 
