@@ -32,7 +32,10 @@ jobs:
   test:
     docker:
       # - image: conanio/gcc11
-      - image: cimg/base:2022.02
+      - image: cimg/base:stable
+        auth:
+          username: nasirim
+          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
     steps:
       - attach_workspace:
           at: .
