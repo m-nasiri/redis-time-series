@@ -47,11 +47,10 @@ jobs:
             sudo cp redis/redistimeseries.so /etc/redis/redistimeseries.so
             sudo chmod +x /etc/redis/redistimeseries.so
             redis-server "/etc/redis/redis.conf" > /tmp/redis.log 2>&1 &
-          background: true          
+            sleep 15
       - run:
           name: "run the test"
           command: |
-            sleep 5
             ./build/test/redis_time_series_test
       - store_test_results:
           path: build/test
