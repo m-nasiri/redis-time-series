@@ -46,6 +46,12 @@ jobs:
           name: Start all services declared in docker-compose.yml
           command: docker-compose up -d 
       - run:
+          command: |
+            sleep 10
+            docker ps
+            docker logs redislocal
+
+      - run:
           name: "run the test"
           command: |
             sleep 10
