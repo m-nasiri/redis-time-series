@@ -25,7 +25,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths: 
-           - build/test/redis_time_series_test
+           - build/test
            - redis
            - docker-compose.yml
 
@@ -45,11 +45,12 @@ jobs:
           command: docker-compose build
       - run:
           name: Start all services declared in docker-compose.yml
-          command: docker-compose up -d
+          command: docker-compose up -d 
       - run:
           name: "run the test"
           command: |
-            ./redis_time_series_test
+            sleep 10
+            ./test/redis_time_series_test
       - store_test_results:
           path: build
 
