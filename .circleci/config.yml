@@ -38,17 +38,20 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - setup_remote_docker
       - run:
-          name: Build images of services declared in docker-compose.yml
-          command: docker-compose build
-      - run:
-          name: Start all services declared in docker-compose.yml
-          command: docker-compose up -d 
+          name: run redis
+          command: |
+            sudo apt update
+            sudo apt install redis-server
+            sudo cp redis/redis.conf /etc/redis/redis.conf
+            sudo cp redis/redistimeseries.so /etc/redis/redistimeseries.so
+            sudo chmod +x /etc/redis/redistimeseries.so
+            sudo systemctl restart redis.service
+            sudo systemctl status redis           
       - run:
           name: "run the test"
           command: |
-            sleep 10
+            sleep 5
             ./build/test/redis_time_series_test
       - store_test_results:
           path: build/test
