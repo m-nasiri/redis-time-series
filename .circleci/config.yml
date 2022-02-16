@@ -42,12 +42,16 @@ jobs:
           name: run redis
           command: |
             sudo apt update
-            sudo apt install redis-server
-            sudo cp redis/redis.conf /etc/redis/redis.conf
-            sudo cp redis/redistimeseries.so /etc/redis/redistimeseries.so
-            sudo chmod +x /etc/redis/redistimeseries.so
-            redis-server "/etc/redis/redis.conf" > /tmp/redis.log 2>&1 &
+            wget http://download.redis.io/redis-stable.tar.gz
+            tar xvzf redis-stable.tar.gz
+            cd redis-stable
+            make
+            sudo make install
+            cd ..
+            sudo chmod +x redis/redistimeseries.so
+            redis-server "redis/redis.conf" > /tmp/redis.log 2>&1 &
             sleep 15
+            cat /tmp/redis.log
       - run:
           name: "run the test"
           command: |
