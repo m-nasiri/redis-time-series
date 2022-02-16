@@ -32,7 +32,7 @@ jobs:
   test:
     docker:
       # - image: conanio/gcc11
-      - image: cimg/base:2021.04
+      - image: cimg/base:2022.02
     steps:
       - attach_workspace:
           at: .
@@ -44,6 +44,7 @@ jobs:
             curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o ~/docker-compose
             chmod +x ~/docker-compose
             sudo mv ~/docker-compose /usr/local/bin/docker-compose
+      - run: sudo systemctl start docker && sleep 60
       - run:
           name: Build images of services declared in docker-compose.yml
           command: cd .. && docker-compose build
