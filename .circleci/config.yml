@@ -14,6 +14,19 @@ jobs:
             conan profile new --detect --force default 
             conan profile update settings.compiler.libcxx=libstdc++11 default
             conan profile update settings.compiler.version=10 default
+      - restore_cache:
+          keys:
+            - conan-cache-v1-{{ checksum "conanfile.txt" }}
+            - conan-cache-v1
+      - run:
+          name: "Install conan packages"
+          command: |
+            mkdir -p build && cd build
+            conan install ..
+      - save_cache:
+          key: conan-cache-v1-{{ checksum "conanfile.txt" }}
+          paths:
+            - ~/.conan
       - run:
           name: "build the code"
           command: |
