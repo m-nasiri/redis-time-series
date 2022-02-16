@@ -46,8 +46,7 @@ jobs:
             sudo cp redis/redis.conf /etc/redis/redis.conf
             sudo cp redis/redistimeseries.so /etc/redis/redistimeseries.so
             sudo chmod +x /etc/redis/redistimeseries.so
-            redis-server "/etc/redis/redis.conf" > /tmp/redis.log 2>&1 &
-          background: true          
+            redis-server "/etc/redis/redis.conf" > /tmp/redis.log 2>&1 &      
       - run:
           name: "run the test"
           command: |
