@@ -22,7 +22,7 @@ jobs:
             cmake ..
             make -j 10
       - run:
-          ./test/redis_time_series_test
+          ./build/test/redis_time_series_test
 
       - persist_to_workspace:
           root: .
