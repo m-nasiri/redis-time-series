@@ -52,9 +52,9 @@ jobs:
           name: "run the test"
           command: |
             sleep 10
-            ./test/redis_time_series_test
+            ./build/test/redis_time_series_test
       - store_test_results:
-          path: build
+          path: build/test
 
 workflows:
   build_and_test:
