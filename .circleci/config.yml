@@ -48,7 +48,7 @@ jobs:
       - run:
           name: "run the test"
           command: |
-            sleep 10
+            sleep 60
             ./build/test/redis_time_series_test
       - store_test_results:
           path: build
