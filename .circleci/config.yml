@@ -1,12 +1,9 @@
-version: 2.1
-executors:
-  exectr:
-    docker:
-      - image: conanio/gcc11
+version: 2.1   
 
 jobs:
   build:
-    executor: exectr
+    docker:
+      - image: conanio/gcc11
     steps:
       - checkout
       - run:
@@ -26,13 +23,30 @@ jobs:
 
       - persist_to_workspace:
           root: .
-          paths: build
+          paths: 
+           - build
 
   test:
-    executor: exectr
+    docker:
+      - image: conanio/gcc11
+      - image: cimg/base:2021.04
     steps:
       - attach_workspace:
           at: .
+      - run:
+          name: Install Docker Compose
+          environment:
+            COMPOSE_VERSION: '1.29.2'
+          command: |
+            curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o ~/docker-compose
+            chmod +x ~/docker-compose
+            sudo mv ~/docker-compose /usr/local/bin/docker-compose
+      - run:
+          name: Build images of services declared in docker-compose.yml
+          command: docker-compose build
+      - run:
+          name: Start all services declared in docker-compose.yml
+          command: docker-compose up -d
       - run:
           name: "run the test"
           command: |
