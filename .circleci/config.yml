@@ -6,11 +6,6 @@ jobs:
       - image: conanio/gcc11
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - source-v1-{{ .Branch }}-{{ .Revision }}
-            - source-v1-{{ .Branch }}-
-            - source-v1-
       - run:
           name: "install building tools"
           command: |
@@ -26,11 +21,6 @@ jobs:
             conan install ..
             cmake ..
             make -j 10
-      - save_cache:
-          key: source-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ".git"
-            - build
       - persist_to_workspace:
           root: .
           paths: 
@@ -45,34 +35,35 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - run:
+          name: "download redis"
+          command: |
+            wget http://download.redis.io/redis-stable.tar.gz
       - restore_cache:
           keys:
             - v1-make-redis-{{checksum "redis-stable.tar.gz"}}
             - v1-make-redis-
       - run:
-          name: run redis
+          name: "make redis"
           command: |
-            wget http://download.redis.io/redis-stable.tar.gz
             tar xvzf redis-stable.tar.gz
             cd redis-stable
             make
-            sudo make install
-            cd ..
-            chmod +x redis/redistimeseries.so
-            redis-server "redis/redis.conf" > /tmp/redis.log 2>&1 &
-            sleep 10
-            cat /tmp/redis.log
       - save_cache:
           key: v1-make-redis-{{checksum "redis-stable.tar.gz"}}
           paths:
             - redis-stable
       - run:
+          name: "run redis server"
+          command: |
+            chmod +x redis/redistimeseries.so
+            ./redis-stable/src/redis-server "redis/redis.conf" > /tmp/redis.log 2>&1 &
+            sleep 10
+            cat /tmp/redis.log
+      - run:
           name: "run the test"
           command: |
             ./build/test/redis_time_series_test
-      - store_test_results:
-          path: build/test
-
 workflows:
   build_and_test:
     jobs:
