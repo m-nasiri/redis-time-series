@@ -21,27 +21,33 @@ jobs:
             conan install ..
             cmake ..
             make -j 10
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
+      - save_cache:
+          key: source-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ".git"
+            - build
       - persist_to_workspace:
           root: .
           paths: 
            - build/test
-           - redis
-           - docker-compose.yml
-
+           - redis/redis*
   test:
     docker:
-      # - image: conanio/gcc11
       - image: cimg/base:stable
         auth:
           username: nasirim
-          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+          password: $DOCKERHUB_PASSWORD
     steps:
       - attach_workspace:
           at: .
       - run:
           name: run redis
           command: |
-            sudo apt update
             wget http://download.redis.io/redis-stable.tar.gz
             tar xvzf redis-stable.tar.gz
             cd redis-stable
@@ -50,12 +56,20 @@ jobs:
             cd ..
             chmod +x redis/redistimeseries.so
             redis-server "redis/redis.conf" > /tmp/redis.log 2>&1 &
-            sleep 15
+            sleep 10
             cat /tmp/redis.log
       - run:
           name: "run the test"
           command: |
             ./build/test/redis_time_series_test
+      - restore_cache:
+          keys:
+            - v1-make-redis-{{checksum "redis-stable.tar.gz"}}
+            - v1-make-redis-
+      - save_cache:
+          key: v1-make-redis-{{checksum "redis-stable.tar.gz"}}
+          paths:
+            - redis-stable
       - store_test_results:
           path: build/test
 
