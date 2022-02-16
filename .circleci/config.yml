@@ -36,27 +36,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-<<<<<<< HEAD
-      - run:
-          name: Install Docker Compose
-          environment:
-            COMPOSE_VERSION: '1.29.2'
-          command: |
-            curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o ~/docker-compose
-            chmod +x ~/docker-compose
-            sudo mv ~/docker-compose /usr/local/bin/docker-compose
       - run: sudo systemctl start docker && sleep 60
-=======
-      # - run:
-      #     name: Install Docker Compose
-      #     environment:
-      #       COMPOSE_VERSION: '1.29.2'
-      #     command: |
-      #       curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o ~/docker-compose
-      #       chmod +x ~/docker-compose
-      #       sudo mv ~/docker-compose /usr/local/bin/docker-compose
-      - run: sleep 60
->>>>>>> 80d6b1b8345718efea85b39a0402370f570ccc84
       - run:
           name: Build images of services declared in docker-compose.yml
           command: docker-compose build
